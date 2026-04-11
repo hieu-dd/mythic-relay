@@ -1,0 +1,15 @@
+[project]
+name = "mythic-relay"
+version = "0.1.0"
+description = "Automation system for processing GitHub engineering requests with AI agents"
+dependencies = [
+    "PyGitHub>=1.58",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "pytest>=7.0",
+    "python-dotenv>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
