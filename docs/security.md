@@ -23,7 +23,7 @@ Capture minimum security controls required for autonomous code changes in CI.
 
 ## Git guardrails
 
-- Allow pushes only to `orchestrator/*`
+- Allow pushes only to `relay/*`
 - Block destructive branch operations unless explicitly approved
 
 ## Permission model (GitHub Actions)

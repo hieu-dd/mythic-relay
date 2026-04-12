@@ -7,11 +7,11 @@ Define safe git behavior for autonomous code changes.
 ## Branch strategy
 
 - Base branch remains untouched by automation
-- Work branch format: `orchestrator/issue-<issue_number>-wip`
+- Work branch format: `relay/issue-<issue_number>-wip`
 
 Example:
 
-- Issue `#128` -> `orchestrator/issue-128-wip`
+- Issue `#128` -> `relay/issue-128-wip`
 
 ## Branch lifecycle
 
@@ -24,7 +24,7 @@ Example:
 
 ## Safety rules
 
-- Reject pushes to non-`orchestrator/*` branches
+- Reject pushes to non-`relay/*` branches
 - Do not force-push protected branches
 - Validate issue number as digits only
 

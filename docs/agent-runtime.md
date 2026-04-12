@@ -44,7 +44,7 @@ The agent is expected to:
 
 1. Implement code changes
 2. Commit on WIP branch
-3. Push `orchestrator/issue-<id>-wip`
+3. Push `relay/issue-<id>-wip`
 4. Create PR with `gh pr create`
 
 Prompt must explicitly require PR creation to make this deterministic.

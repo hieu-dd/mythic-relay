@@ -22,7 +22,7 @@ This backlog prioritizes delivery of the full bug-fix + PR flow first, while pos
 
 ### MR-002 — Implement CLI command surface
 - Background: GitHub Actions needs deterministic small commands.
-- Goal: Provide CLI commands for each orchestration step.
+- Goal: Provide CLI commands for each workflow step.
 - Scope: `parse-request`, `build-prompt`, `run-agent`, `finalize-success`, `finalize-failure`.
 - Acceptance Criteria:
   - Each command runnable independently via CLI
@@ -72,7 +72,7 @@ This backlog prioritizes delivery of the full bug-fix + PR flow first, while pos
 
 ### MR-007 — WIP branch detect and checkpoint
 - Background: Automation must avoid writing directly to protected branches.
-- Goal: Work only on `orchestrator/issue-<id>-wip` and push safely.
+- Goal: Work only on `relay/issue-<id>-wip` and push safely.
 - Scope: branch detect/create/checkout, commit, push checks.
 - Acceptance Criteria:
   - Run creates or reuses WIP branch
@@ -92,7 +92,7 @@ This backlog prioritizes delivery of the full bug-fix + PR flow first, while pos
 
 ### MR-009 — Build main GitHub workflow
 - Background: End-to-end behavior must run from issue comments.
-- Goal: Implement orchestrator workflow chaining all core commands.
+- Goal: Implement relay workflow chaining all core commands.
 - Scope: workflow YAML, step output validation, failure finalization.
 - Acceptance Criteria:
   - `/ai ...` on issue executes full chain and produces PR
@@ -124,7 +124,7 @@ This backlog prioritizes delivery of the full bug-fix + PR flow first, while pos
 ### MR-012 — Minimal memory persistence
 - Background: Historical state is needed for reruns/debugging.
 - Goal: Persist per-comment status and run logs.
-- Scope: `.orchestrator/comment-<id>/status.json` + `run-log.md`.
+- Scope: `.relay/comment-<id>/status.json` + `run-log.md`.
 - Acceptance Criteria:
   - New runs update persisted state consistently
 - Estimate: 0.5 day

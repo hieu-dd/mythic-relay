@@ -1,10 +1,10 @@
 # mythic-relay
 
-Claude-first GitHub AI orchestrator for fixing bugs and creating pull requests from issue comments.
+Claude-first GitHub AI relay for fixing bugs and creating pull requests from issue comments.
 
 ## Why this project
 
-`mythic-relay` is a new greenfield orchestrator inspired by the ai-orchestrator model, but optimized for fast delivery:
+`mythic-relay` is a new greenfield relay engine inspired by practical AI workflow patterns, but optimized for fast delivery:
 
 - Single agent backend in v0.1: `claude-code`
 - Full core flow: receive request -> run AI fix -> commit/push -> create PR
@@ -16,8 +16,8 @@ Advanced automation (auto-fix schedules, multi-agent profiles, replay/simulate) 
 
 1. User comments on an issue: `/ai <request>`
 2. Action creates a progress comment and gathers thread context
-3. Orchestrator builds a prompt and runs Claude Code
-4. Agent edits code, commits, pushes to `orchestrator/issue-<id>-wip`
+3. Relay engine builds a prompt and runs Claude Code
+4. Agent edits code, commits, pushes to `relay/issue-<id>-wip`
 5. Agent creates PR via `gh pr create`
 6. Action finalizes progress as success/failure with concise reason
 
