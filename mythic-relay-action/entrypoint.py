@@ -38,6 +38,7 @@ def main() -> int:
     issue = payload.get("issue") or {}
 
     is_issue_opened = event_name == "issues" and action == "opened"
+    is_pr_opened = event_name == "pull_request" and action == "opened"
 
     issue_number = str(issue.get("number", ""))
     issue_title = str(issue.get("title", ""))
@@ -51,6 +52,10 @@ def main() -> int:
     print("[mythic-relay-action] event inspection")
     print(f"[mythic-relay-action] GITHUB_EVENT_NAME={event_name}")
     print(f"[mythic-relay-action] action={action}")
+
+    if is_pr_opened:
+        print("Trigger when open PR")
+        return 0
 
     if not is_issue_opened:
         print("[mythic-relay-action] skip: not an issue opened event")
