@@ -15,16 +15,7 @@ jobs:
       issues: read
 
     env:
-      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
-      ANTHROPIC_AUTH_TOKEN: ${{ secrets.MINIMAX_API_KEY }}
-      ANTHROPIC_MODEL: MiniMax-M2.7
-      ANTHROPIC_SMALL_FAST_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_SONNET_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_OPUS_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: MiniMax-M2.7
 
     steps:
       - name: Checkout Code
@@ -32,21 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Claude Code
-        run: |
-          curl -fsSL https://claude.ai/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      
-      - name: Install GitHub MCP
-        run: |
-          # We use the GITHUB_PATH set in the previous step
-          claude mcp add-json github '{
-            "type": "http",
-            "url": "https://api.githubcopilot.com/mcp",
-            "headers": {
-              "Authorization": "Bearer '"$GITHUB_PAT"'"
-            }
-          }'
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate PR Metadata
         id: claude_ai

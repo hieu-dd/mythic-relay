@@ -13,16 +13,8 @@ jobs:
       pull-requests: write # Required if Claude needs to comment or edit the PR
     
     env:
-      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
       # Use GITHUB_TOKEN for standard operations, or a PAT if you need to trigger other workflows
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
-      ANTHROPIC_AUTH_TOKEN: ${{ secrets.MINIMAX_API_KEY }}
-      ANTHROPIC_MODEL: MiniMax-M2.7
-      ANTHROPIC_SMALL_FAST_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_SONNET_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_OPUS_MODEL: MiniMax-M2.7
-      ANTHROPIC_DEFAULT_HAIKU_MODEL: MiniMax-M2.7
 
     steps:
       - name: Checkout
@@ -30,28 +22,11 @@ jobs:
         with:
           fetch-depth: 0 # Fetches all history so Claude can see the diff properly
 
-      - name: Ensure MiniMax secret exists
-        run: |
-          if [ -z "${MINIMAX_API_KEY}" ]; then
-            echo "::error::MINIMAX_API_KEY is missing. Check your repository secrets."
-            exit 1
-          fi
-
-      - name: Install Claude Code
-        run: |
-          curl -fsSL https://claude.ai/install.sh | bash
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Install GitHub MCP
-        run: |
-          # We use the GITHUB_PATH set in the previous step
-          claude mcp add-json github '{
-            "type": "http",
-            "url": "https://api.githubcopilot.com/mcp",
-            "headers": {
-              "Authorization": "Bearer '"$GITHUB_PAT"'"
-            }
-          }'
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ env.GITHUB_PAT }}
 
       - name: Run Claude Review
         run: |
