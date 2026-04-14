@@ -15,11 +15,20 @@ description: |
 2. Identify the file type(s) — see checklist references below
 3. Run through every applicable checklist section
 4. Produce a structured report (see Output Format)
+5. Post the report as a PR comment via GitHub MCP tools
 
 For each file type, load the relevant reference:
 - **Python** (`.py`) → read `references/python.md`
 - **GitHub Actions YAML** (`.github/workflows/*.yml`) → read `references/gha-yaml.md`
 - **Security audit** (any file, or when user asks specifically) → read `references/security.md`
+
+## PR Comment Requirement (Mandatory)
+
+- If the user asks to review a `github.com` PR (URL or PR number), you MUST publish the review as a PR comment using GitHub MCP tools.
+- Use GitHub MCP as the primary path for posting review comments. Do not use CLI-based PR commenting as a substitute when MCP is available.
+- Post the same structured content defined in Output format as the comment body.
+- If GitHub MCP is unavailable or fails, clearly report the blocker and return a ready-to-paste PR comment body.
+- This requirement applies only to `github.com` pull requests.
 
 ## Output format
 
