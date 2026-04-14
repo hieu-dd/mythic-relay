@@ -1,0 +1,55 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  review-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Required if Claude needs to comment or edit the PR
+    
+    env:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      # Use GITHUB_TOKEN for standard operations, or a PAT if you need to trigger other workflows
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      ANTHROPIC_BASE_URL: https://openrouter.ai/api
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.OPENROUTER_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history so Claude can see the diff properly
+
+      - name: Ensure OpenRouter secret exists
+        run: |
+          if [ -z "${OPENROUTER_API_KEY}" ]; then
+            echo "::error::OPENROUTER_API_KEY is missing. Check your repository secrets."
+            exit 1
+          fi
+
+      - name: Install Claude Code
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install GitHub MCP
+        run: |
+          # We use the GITHUB_PATH set in the previous step
+          claude mcp add-json github '{
+            "type": "http",
+            "url": "https://api.githubcopilot.com/mcp",
+            "headers": {
+              "Authorization": "Bearer '"$GITHUB_PAT"'"
+            }
+          }'
+
+      - name: Run Claude Review
+        run: |
+          claude -p "Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}. Focus on code quality and logic issues." \
+            --dangerously-skip-permissions
