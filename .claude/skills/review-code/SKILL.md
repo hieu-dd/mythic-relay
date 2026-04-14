@@ -14,8 +14,9 @@ description: |
 1. Read the target file(s) if not already in context
 2. Identify the file type(s) — see checklist references below
 3. Run through every applicable checklist section
-4. Produce a structured report (see Output Format)
-5. Post the report as a PR comment via GitHub MCP tools
+4. For `github.com` PR reviews, split findings into issue-level comments with exact file/line locations via GitHub MCP tools
+5. For `github.com` PR reviews, post one concise PR summary comment (no full detailed report)
+6. For non-PR reviews, produce a structured report (see Output Format)
 
 For each file type, load the relevant reference:
 - **Python** (`.py`) → read `references/python.md`
@@ -24,15 +25,18 @@ For each file type, load the relevant reference:
 
 ## PR Comment Requirement (Mandatory)
 
-- If the user asks to review a `github.com` PR (URL or PR number), you MUST publish the review as a PR comment using GitHub MCP tools.
-- Use GitHub MCP as the primary path for posting review comments. Do not use CLI-based PR commenting as a substitute when MCP is available.
-- Post the same structured content defined in Output format as the comment body.
+- If the user asks to review a `github.com` PR (URL or PR number), you MUST use GitHub MCP tools to post comments.
+- Each finding MUST be posted as a separate issue comment, anchored to the most accurate file/line in the diff.
+- Do not combine all findings into one long PR comment.
+- Post one additional PR-level summary comment with overall status, risk highlights, and verdict.
+- Keep the PR-level summary concise; detailed fixes belong in the issue-level comments.
+- Use GitHub MCP as the primary path for posting comments. Do not use CLI-based PR commenting as a substitute when MCP is available.
 - If GitHub MCP is unavailable or fails, clearly report the blocker and return a ready-to-paste PR comment body.
 - This requirement applies only to `github.com` pull requests.
 
 ## Output format
 
-Use this structure for every review:
+Use this structure for non-PR reviews:
 
 ```
 ## Code Review: <filename>
@@ -57,6 +61,18 @@ One of: ✅ Approve | 🔄 Approve with suggestions | ❌ Needs changes
 ```
 
 If a section has no findings, omit it entirely — don't write "None found."
+
+For `github.com` PR reviews, use this posting model:
+
+1. Issue-level comments (one per finding, anchored to file/line)
+   - Title: severity + short issue label
+   - Body: problem, impact, and concrete fix
+   - Include exact location (`file:line`) in the comment text even when anchored
+2. PR-level summary comment
+   - Short summary of overall code health
+   - Counts by severity (critical/warning/suggestion)
+   - Final verdict: ✅ Approve | 🔄 Approve with suggestions | ❌ Needs changes
+   - Do not repeat full finding details here
 
 ## Scope guidance
 
