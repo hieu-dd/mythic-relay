@@ -18,16 +18,21 @@ jobs:
       cancel-in-progress: true
 
     env:
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_BASE_URL: https://openrouter.ai/api
-      ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.MINIMAX_API_KEY }}
+      ANTHROPIC_MODEL: MiniMax-M2.7
+      ANTHROPIC_SMALL_FAST_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_SONNET_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_OPUS_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: MiniMax-M2.7
 
     steps:
-      - name: Ensure OpenRouter secret exists
+      - name: Ensure MiniMax secret exists
         run: |
-          if [ -z "${OPENROUTER_API_KEY}" ]; then
-            echo "::error::OPENROUTER_API_KEY is missing. Check repository secrets."
+          if [ -z "${MINIMAX_API_KEY}" ]; then
+            echo "::error::MINIMAX_API_KEY is missing. Check repository secrets."
             exit 1
           fi
 

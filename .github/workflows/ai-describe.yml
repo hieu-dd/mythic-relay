@@ -15,10 +15,16 @@ jobs:
       issues: read
 
     env:
-      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      MINIMAX_API_KEY: ${{ secrets.MINIMAX_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_BASE_URL: https://openrouter.ai/api
-      ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      ANTHROPIC_BASE_URL: https://api.minimax.io/anthropic
+      ANTHROPIC_AUTH_TOKEN: ${{ secrets.MINIMAX_API_KEY }}
+      ANTHROPIC_MODEL: MiniMax-M2.7
+      ANTHROPIC_SMALL_FAST_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_SONNET_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_OPUS_MODEL: MiniMax-M2.7
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: MiniMax-M2.7
 
     steps:
       - name: Checkout Code
