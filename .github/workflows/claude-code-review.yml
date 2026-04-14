@@ -51,5 +51,5 @@ jobs:
 
       - name: Run Claude Review
         run: |
-          claude -p "Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}. Focus on code quality and logic issues." \
+          claude -p "Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }} by skill review-code" \
             --dangerously-skip-permissions
