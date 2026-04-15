@@ -63,15 +63,8 @@ jobs:
 
       - name: Resolve PR comments and patch with Claude
         run: |
-          claude -p "PR #${{ steps.pr.outputs.number }} in ${{ github.repository }} received an AI resolve command.
-          Work fully autonomously without further human intervention:
-          - Review all open review threads and PR comments.
-          - Decide which comments are valid/actionable.
-          - Implement code changes directly in the checked out PR branch when needed.
-          - Run relevant lint/tests for touched areas when feasible.
-          - Commit and push updates to the same PR branch.
-          - Resolve threads that are fully addressed.
-          - Reply on threads that should stay open with concise reasons.
-          - Post one final PR summary comment with actions taken, commits pushed, resolved/replied counts, and remaining items.
-          Use local git for code changes and GitHub MCP for PR/review-thread operations." \
-          --dangerously-skip-permissions
+          claude -p "ai-resolve
+          PR #${{ steps.pr.outputs.number }} in ${{ github.repository }}.
+          Branch is checked out at ${{ steps.pr.outputs.head_ref }}.
+          Work autonomously without further human intervention.
+          " --dangerously-skip-permissions
