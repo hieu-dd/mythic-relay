@@ -24,7 +24,6 @@ class AgentResult(TypedDict):
 
     result: str
     failure_reason: str
-    agent_attempts: int
 
 
 def parse_request(request_text: str) -> ParsedRequest:
@@ -53,10 +52,10 @@ def parse_request(request_text: str) -> ParsedRequest:
 
     i = 0
     while i < len(parts):
-        if parts[i] == "--model" and i + 1 < len(parts):
+        if parts[i] == "--model" and i + 1 < len(parts) and not parts[i + 1].startswith("--"):
             model_override = parts[i + 1]
             i += 2
-        elif parts[i] == "--max-turns" and i + 1 < len(parts):
+        elif parts[i] == "--max-turns" and i + 1 < len(parts) and not parts[i + 1].startswith("--"):
             try:
                 max_turns_override = int(parts[i + 1])
             except ValueError:
@@ -108,7 +107,7 @@ def build_prompt(
 
     parts.append(f"User Request: {user_request}")
 
-    prompt = "\n".join(parts)
+    prompt = "\n\n".join(parts)
 
     prompt += """
 
@@ -161,7 +160,6 @@ def run_agent(
             return {
                 "result": "success",
                 "failure_reason": "",
-                "agent_attempts": 1,
             }
         else:
             stderr = result.stderr.lower() if result.stderr else ""
@@ -175,26 +173,22 @@ def run_agent(
             return {
                 "result": "failure",
                 "failure_reason": failure_reason,
-                "agent_attempts": 1,
             }
 
     except subprocess.TimeoutExpired:
         return {
             "result": "failure",
             "failure_reason": "agent_timeout",
-            "agent_attempts": 1,
         }
     except FileNotFoundError:
         return {
             "result": "failure",
             "failure_reason": "agent_error",
-            "agent_attempts": 1,
         }
     except Exception:
         return {
             "result": "failure",
             "failure_reason": "agent_error",
-            "agent_attempts": 1,
         }
 
 
@@ -205,12 +199,12 @@ def finalize_success(pr_url: str | None = None, summary: str | None = None) -> N
         pr_url: Optional PR URL created.
         summary: Optional summary of actions taken.
     """
-    print("::set-output name=status::completed")
-    print("::set-output name=failure_reason::")
+    print("status=completed >> $GITHUB_OUTPUT")
+    print("failure_reason= >> $GITHUB_OUTPUT")
     if pr_url:
-        print(f"::set-output name=pr_url::{pr_url}")
+        print(f"pr_url={pr_url} >> $GITHUB_OUTPUT")
     if summary:
-        print(f"::set-output name=summary::{summary}")
+        print(f"summary={summary} >> $GITHUB_OUTPUT")
 
 
 def finalize_failure(failure_reason: str, summary: str | None = None) -> None:
@@ -220,10 +214,10 @@ def finalize_failure(failure_reason: str, summary: str | None = None) -> None:
         failure_reason: The failure reason code.
         summary: Optional summary of what went wrong.
     """
-    print("::set-output name=status::failed")
-    print(f"::set-output name=failure_reason::{failure_reason}")
+    print("status=failed >> $GITHUB_OUTPUT")
+    print(f"failure_reason={failure_reason} >> $GITHUB_OUTPUT")
     if summary:
-        print(f"::set-output name=summary::{summary}")
+        print(f"summary={summary} >> $GITHUB_OUTPUT")
 
 
 def _add_common_args(parser: argparse.ArgumentParser) -> None:
@@ -291,9 +285,8 @@ def _main() -> None:
             max_turns=args.max_turns,
             timeout=args.timeout,
         )
-        print(f"::set-output name=result::{agent_result['result']}")
-        print(f"::set-output name=failure_reason::{agent_result['failure_reason']}")
-        print(f"::set-output name=agent_attempts::{agent_result['agent_attempts']}")
+        print(f"result={agent_result['result']} >> $GITHUB_OUTPUT")
+        print(f"failure_reason={agent_result['failure_reason']} >> $GITHUB_OUTPUT")
 
     elif args.command == "finalize-success":
         finalize_success(pr_url=args.pr_url, summary=args.summary)

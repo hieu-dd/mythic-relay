@@ -52,6 +52,20 @@ class TestParseRequest:
         result = parse_request("  Fix the login bug")
         assert result.user_request == "Fix the login bug"
 
+    def test_request_model_followed_by_flag(self) -> None:
+        """Test parsing request when --model is followed by another flag."""
+        result = parse_request("--model --max-turns 5 Fix the login bug")
+        assert result.user_request == "--model Fix the login bug"
+        assert result.model_override is None
+        assert result.max_turns_override == 5
+
+    def test_request_max_turns_followed_by_flag(self) -> None:
+        """Test parsing request when --max-turns is followed by another flag."""
+        result = parse_request("--max-turns --model opus Fix the login bug")
+        assert result.user_request == "--max-turns Fix the login bug"
+        assert result.model_override == "opus"
+        assert result.max_turns_override is None
+
 
 class TestBuildPrompt:
     """Tests for build_prompt function."""
@@ -81,6 +95,22 @@ class TestBuildPrompt:
         assert "Work autonomously" in result
         assert "Commit and push" in result
 
+    def test_prompt_with_body_only_separator(self) -> None:
+        """Test that prompt adds blank line between sections when no title."""
+        result = build_prompt("Fix the bug", issue_body="The bug is in login")
+        assert "Request:\n\nDescription:" in result
+
+    def test_prompt_with_all_sections(self) -> None:
+        """Test that prompt sections are properly separated."""
+        result = build_prompt(
+            user_request="Fix it",
+            issue_title="Title",
+            issue_body="Body",
+            issue_number=1,
+            repository="owner/repo",
+        )
+        assert "\n\n" in result  # Blank line between sections
+
 
 class TestRunAgent:
     """Tests for run_agent function."""
@@ -90,7 +120,6 @@ class TestRunAgent:
         result = run_agent("test prompt", timeout=1)
         assert "result" in result
         assert "failure_reason" in result
-        assert "agent_attempts" in result
 
     def test_run_agent_nonexistent_command(self) -> None:
         """Test run_agent handles missing claude gracefully."""
@@ -107,24 +136,24 @@ class TestFinalizeFunctions:
         """Test finalize_success basic output."""
         finalize_success()
         captured = capsys.readouterr()
-        assert "::set-output name=status::completed" in captured.out
-        assert "::set-output name=failure_reason::" in captured.out
+        assert "status=completed >> $GITHUB_OUTPUT" in captured.out
+        assert "failure_reason= >> $GITHUB_OUTPUT" in captured.out
 
     def test_finalize_success_with_pr_url(self, capsys) -> None:
         """Test finalize_success with PR URL."""
         finalize_success(pr_url="https://github.com/owner/repo/pull/123")
         captured = capsys.readouterr()
-        assert "::set-output name=pr_url::https://github.com/owner/repo/pull/123" in captured.out
+        assert "pr_url=https://github.com/owner/repo/pull/123 >> $GITHUB_OUTPUT" in captured.out
 
     def test_finalize_failure_basic(self, capsys) -> None:
         """Test finalize_failure basic output."""
         finalize_failure("agent_error")
         captured = capsys.readouterr()
-        assert "::set-output name=status::failed" in captured.out
-        assert "::set-output name=failure_reason::agent_error" in captured.out
+        assert "status=failed >> $GITHUB_OUTPUT" in captured.out
+        assert "failure_reason=agent_error >> $GITHUB_OUTPUT" in captured.out
 
     def test_finalize_failure_with_summary(self, capsys) -> None:
         """Test finalize_failure with summary."""
         finalize_failure("agent_timeout", summary="Agent timed out after 10 minutes")
         captured = capsys.readouterr()
-        assert "::set-output name=summary::Agent timed out after 10 minutes" in captured.out
+        assert "summary=Agent timed out after 10 minutes >> $GITHUB_OUTPUT" in captured.out
