@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from dataclasses import dataclass
 from typing import TypedDict
 
-__all__ = ["main", "parse_request", "build_prompt", "run_agent", "finalize_success", "finalize_failure"]
+__all__ = [
+    "main",
+    "parse_request",
+    "build_prompt",
+    "run_agent",
+    "finalize_success",
+    "finalize_failure",
+]
 
 
 @dataclass
@@ -24,6 +32,7 @@ class AgentResult(TypedDict):
 
     result: str
     failure_reason: str
+    agent_attempts: int
 
 
 def parse_request(request_text: str) -> ParsedRequest:
@@ -98,12 +107,15 @@ def build_prompt(
     if issue_number:
         parts.append(f"Issue: #{issue_number}")
 
-    parts.append("Task:" if issue_title else "Request:")
-
     if issue_title:
+        parts.append("Task:")
         parts.append(f"Title: {issue_title}")
-    if issue_body:
-        parts.append(f"Description: {issue_body}")
+        if issue_body:
+            parts.append(f"Description: {issue_body}")
+    else:
+        parts.append("Request:")
+        if issue_body:
+            parts.append(f"Description: {issue_body}")
 
     parts.append(f"User Request: {user_request}")
 
@@ -140,6 +152,7 @@ def run_agent(
 
     Returns:
         Dict with 'result', 'failure_reason', and 'agent_attempts' keys.
+        agent_attempts is always 1 (no retry logic implemented).
     """
     import subprocess
 
@@ -162,36 +175,83 @@ def run_agent(
             return {
                 "result": "success",
                 "failure_reason": "",
+                "agent_attempts": 1,
             }
         else:
-            stderr = result.stderr.lower() if result.stderr else ""
-            if "auth" in stderr or "permission" in stderr:
-                failure_reason = "auth_error"
-            elif "timeout" in stderr:
-                failure_reason = "agent_timeout"
-            else:
-                failure_reason = "agent_error"
+            failure_reason = _classify_failure(result.stderr, result.returncode)
 
             return {
                 "result": "failure",
                 "failure_reason": failure_reason,
+                "agent_attempts": 1,
             }
 
     except subprocess.TimeoutExpired:
         return {
             "result": "failure",
             "failure_reason": "agent_timeout",
+            "agent_attempts": 1,
         }
     except FileNotFoundError:
         return {
             "result": "failure",
             "failure_reason": "agent_error",
+            "agent_attempts": 1,
         }
-    except Exception:
+    except subprocess.SubprocessError:
         return {
             "result": "failure",
             "failure_reason": "agent_error",
+            "agent_attempts": 1,
         }
+
+
+def _classify_failure(stderr: str, returncode: int) -> str:
+    """Classify agent failure from stderr content and return code.
+
+    Args:
+        stderr: The stderr output from the subprocess.
+        returncode: The process return code.
+
+    Returns:
+        Failure reason string.
+    """
+    if returncode == 124:
+        return "agent_timeout"
+
+    if returncode == 126:
+        return "auth_error"
+
+    if returncode in (1, 2):
+        stderr_lower = stderr.lower() if stderr else ""
+        if "not authenticated" in stderr_lower or "permission denied" in stderr_lower:
+            return "auth_error"
+        if "timeout" in stderr_lower and ("exceeded" in stderr_lower or "limit" in stderr_lower):
+            return "agent_timeout"
+
+    return "agent_error"
+
+
+def _write_output(key: str, value: str) -> None:
+    """Write a key-value pair to $GITHUB_OUTPUT, handling multi-line values safely.
+
+    Falls back to stdout print when GITHUB_OUTPUT env var is not set.
+
+    Args:
+        key: The output variable name.
+        value: The output value.
+    """
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if not github_output:
+        print(f"{key}={value} >> $GITHUB_OUTPUT")
+        return
+
+    if "\n" in value:
+        with open(github_output, "a") as f:
+            f.write(f"{key}<<EOF\n{value}\nEOF\n")
+    else:
+        with open(github_output, "a") as f:
+            f.write(f"{key}={value}\n")
 
 
 def finalize_success(pr_url: str | None = None, summary: str | None = None) -> None:
@@ -201,12 +261,12 @@ def finalize_success(pr_url: str | None = None, summary: str | None = None) -> N
         pr_url: Optional PR URL created.
         summary: Optional summary of actions taken.
     """
-    print("status=completed >> $GITHUB_OUTPUT")
-    print("failure_reason= >> $GITHUB_OUTPUT")
+    _write_output("status", "completed")
+    _write_output("failure_reason", "")
     if pr_url:
-        print(f"pr_url={pr_url} >> $GITHUB_OUTPUT")
+        _write_output("pr_url", pr_url)
     if summary:
-        print(f"summary={summary} >> $GITHUB_OUTPUT")
+        _write_output("summary", summary)
 
 
 def finalize_failure(failure_reason: str, summary: str | None = None) -> None:
@@ -216,10 +276,10 @@ def finalize_failure(failure_reason: str, summary: str | None = None) -> None:
         failure_reason: The failure reason code.
         summary: Optional summary of what went wrong.
     """
-    print("status=failed >> $GITHUB_OUTPUT")
-    print(f"failure_reason={failure_reason} >> $GITHUB_OUTPUT")
+    _write_output("status", "failed")
+    _write_output("failure_reason", failure_reason)
     if summary:
-        print(f"summary={summary} >> $GITHUB_OUTPUT")
+        _write_output("summary", summary)
 
 
 def _add_common_args(parser: argparse.ArgumentParser) -> None:
@@ -266,9 +326,12 @@ def _main() -> None:
 
     if args.command == "parse-request":
         result = parse_request(args.request_text)
-        print(f"user_request={result.user_request} >> $GITHUB_OUTPUT")
-        print(f"model_override={result.model_override or ''} >> $GITHUB_OUTPUT")
-        print(f"max_turns_override={result.max_turns_override or ''} >> $GITHUB_OUTPUT")
+        _write_output("user_request", result.user_request)
+        _write_output("model_override", result.model_override or "")
+        _write_output(
+            "max_turns_override",
+            str(result.max_turns_override) if result.max_turns_override is not None else "",
+        )
 
     elif args.command == "build-prompt":
         prompt = build_prompt(
@@ -278,7 +341,7 @@ def _main() -> None:
             issue_number=args.issue_number,
             repository=args.repository,
         )
-        print(f"prompt={prompt} >> $GITHUB_OUTPUT")
+        _write_output("prompt", prompt)
 
     elif args.command == "run-agent":
         agent_result = run_agent(
@@ -287,8 +350,8 @@ def _main() -> None:
             max_turns=args.max_turns,
             timeout=args.timeout,
         )
-        print(f"result={agent_result['result']} >> $GITHUB_OUTPUT")
-        print(f"failure_reason={agent_result['failure_reason']} >> $GITHUB_OUTPUT")
+        _write_output("result", agent_result["result"])
+        _write_output("failure_reason", agent_result["failure_reason"])
         if agent_result["result"] == "failure":
             sys.exit(1)
 
