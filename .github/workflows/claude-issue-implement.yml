@@ -18,14 +18,15 @@ jobs:
       cancel-in-progress: true
 
     env:
-      GITHUB_PAT: ${{ secrets.CLAUDE_GH_PAT != '' && secrets.CLAUDE_GH_PAT || secrets.GITHUB_TOKEN }}
-      GH_TOKEN: ${{ secrets.CLAUDE_GH_PAT != '' && secrets.CLAUDE_GH_PAT || secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.CLAUDE_GH_PAT }}
+      GH_TOKEN: ${{ secrets.CLAUDE_GH_PAT }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ env.GITHUB_PAT }}
 
       - name: Setup Claude Code with MiniMax
         uses: ./.github/actions/setup-claude-minimax
