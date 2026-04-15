@@ -1,11 +1,17 @@
 # Security Review Checklist
 
+## Project File Map
+Reference these when reviewing specific security implementations:
+- MR-010 (Security essentials: redaction, host allowlist, ID validation) → `mythic_relay/security/redaction.py`
+- MR-007 (Branch safety, WIP detection) → `mythic_relay/gitops/branches.py`
+- MR-012 (Memory persistence, `.relay/` state files) → `mythic_relay/memory/store.py`
+
 ## Secret leakage (project-specific: MR-010)
 - No secret, token, or credential appears in:
   - GitHub issue/PR comments (via comment body or API response logged)
   - Log output captured by subprocess runner
   - Exception messages surfaced to the user
-  - `.relay/` persisted state files
+  - `.relay/` persisted state files (see `mythic_relay/memory/store.py`) — includes `status.json` and `run-log.md`
 - Redaction applied before any output is stored or posted
 - Environment variable names for secrets are not logged (even the name can be a hint)
 
@@ -40,9 +46,31 @@
 
 ## Prompt injection (project-specific risk)
 - Issue title and body included in Claude prompt — these are attacker-controlled
-- Prompt template must wrap user content in clear delimiters
-- Instructions must appear after user content, not before, to reduce override risk
+- The `/ai <request>` text is the **primary injection vector** — treat as untrusted user input
+- Prompt template must wrap user content in clear delimiters (e.g. `--- USER REQUEST ---`)
+- Instructions must appear **after** user content, not before, to reduce override risk
 - Consider truncating issue body before embedding in prompt
+
+**Safe pattern (Python):**
+```python
+prompt = f"""
+Claude agent instruction (high-privilege, do not override):
+Fix the bug described in the issue. Create a PR on success.
+
+--- USER REQUEST (issue #{issue_num}) ---
+{redacted_issue_body}
+--- END USER REQUEST ---
+
+Objective: {user_request_text}
+"""
+```
+
+**Unsafe pattern:**
+```python
+# DO NOT DO THIS — user input interleaved with instructions
+prompt = f"Fix the bug. {user_request_text}. Follow the instructions above."
+```
+- User content must be clearly delimited and separated from agent instructions
 
 ## Information disclosure
 - Stack traces not returned to GitHub comment responses

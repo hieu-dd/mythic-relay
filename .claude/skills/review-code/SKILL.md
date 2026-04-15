@@ -3,7 +3,8 @@ name: review-code
 description: |
   Comprehensive code review skill covering code quality, bugs, security, performance, and project-specific patterns.
   Use when the user asks to: review code, check a file, look for bugs, audit security, analyze code quality,
-  or any variant of "review this", "check my code", "is this correct", "what's wrong here".
+  or any variant of "review this", "check my code", "is this correct", "what's wrong here", "assess this PR".
+  Also triggers on GitHub PR URLs (e.g. github.com/owner/repo/pull/123) or raw PR numbers (e.g. "/review-pr 42").
   Covers Python, GitHub Actions YAML, CLI/subprocess patterns, and GitHub API usage as found in this project.
 ---
 
@@ -11,17 +12,37 @@ description: |
 
 ## Workflow
 
-1. Read the target file(s) if not already in context
-2. Identify the file type(s) — see checklist references below
-3. Run through every applicable checklist section
-4. For `github.com` PR reviews, split findings into issue-level comments with exact file/line locations via GitHub MCP tools
-5. For `github.com` PR reviews, post one concise PR summary comment (no full detailed report)
-6. For non-PR reviews, produce a structured report (see Output Format)
+1. **Detect trigger** — Identify whether this is:
+   - A GitHub PR review (URL like `github.com/owner/repo/pull/123`, or raw PR number)
+   - A local/single-file review (explicit file path or "review this" with no PR context)
+   - A quick-scan request (targeted question about a specific pattern, not a full file)
+2. **Determine depth** — See Review Depth Guide below before running checklists
+3. **Read the target file(s)** if not already in context
+4. **Identify the file type(s)** — see checklist references below
+5. **Run through every applicable checklist section** (skip optional items on quick scans)
+6. For `github.com` PR reviews: post findings via GitHub MCP tools (see PR Comment Requirement)
+7. For non-PR reviews: produce a structured report (see Output Format)
 
 For each file type, load the relevant reference:
-- **Python** (`.py`) → read `references/python.md`
-- **GitHub Actions YAML** (`.github/workflows/*.yml`) → read `references/gha-yaml.md`
-- **Security audit** (any file, or when user asks specifically) → read `references/security.md`
+- **Python** (`.py`) → read `.claude/skills/review-code/references/python.md`
+- **GitHub Actions YAML** (`.github/workflows/*.yml`) → read `.claude/skills/review-code/references/gha-yaml.md`
+- **Security audit** (any file, or when user asks specifically) → read `.claude/skills/review-code/references/security.md`
+
+Reference paths are relative to the project root.
+
+## Review Depth Guide
+
+**Quick scan** — A single-file, targeted, or partial review (e.g. "check this function", one specific pattern, or PR with few changes):
+- Run only Critical items from checklists
+- Skip optional/suggestion items
+- Produce brief verdict
+
+**Deep review** — Full file or multi-file review (e.g. full PR, architecture assessment, security audit):
+- Run all checklist sections including Warnings and Suggestions
+- Cross-reference with project-specific references (MR-### anchors)
+- Full structured report
+
+Default to deep review unless the user explicitly asks for a quick scan.
 
 ## PR Comment Requirement (Mandatory)
 
@@ -31,7 +52,7 @@ For each file type, load the relevant reference:
 - Post one additional PR-level summary comment with overall status, risk highlights, and verdict.
 - Keep the PR-level summary concise; detailed fixes belong in the issue-level comments.
 - Use GitHub MCP as the primary path for posting comments. Do not use CLI-based PR commenting as a substitute when MCP is available.
-- If GitHub MCP is unavailable or fails, clearly report the blocker and return a ready-to-paste PR comment body.
+- **MCP fallback**: If GitHub MCP is unavailable or fails, retry once after a brief pause. If it still fails, produce a ready-to-paste multi-finding comment body (same format as issue-level comments would take) and clearly report the MCP blocker so the user can manually post.
 - This requirement applies only to `github.com` pull requests.
 
 ## Output format

@@ -1,5 +1,13 @@
 # Python Review Checklist
 
+## Project File Map
+Reference these when reviewing implementation of specific MR items:
+- MR-002 (CLI command surface) → `mythic_relay/cli/commands.py`
+- MR-003 (GitHub API wrapper) → `mythic_relay/github/api.py`
+- MR-006 (Claude runtime) → `mythic_relay/agent/claude_runner.py`
+- MR-007 (WIP branch management) → `mythic_relay/gitops/branches.py`
+- MR-010 (Security/redaction) → `mythic_relay/security/redaction.py`
+
 ## Type safety (mypy)
 - All function signatures have type annotations (params + return type)
 - No use of `Any` without a comment explaining why
@@ -48,3 +56,10 @@
 - `subprocess` calls mocked in unit tests — avoid real network/git in unit tests
 - Fixtures used for shared setup, not copy-paste in each test
 - Test names describe the scenario: `test_run_agent_returns_auth_error_on_401`
+
+## Docker / Action entrypoint (project-specific)
+- `mythic-relay-action/entrypoint.py` runs as container entrypoint — treat as subprocess runner context
+- `subprocess.run()` must never use `shell=True` even inside a container
+- All `subprocess` calls must have `timeout=` set; container overall timeout is enforced by GitHub Actions job timeout
+- Output capture must use `capture_output=True` or explicit `stdout=PIPE/stderr=PIPE`
+- Env vars passed to subprocess must not include secrets (use redaction before logging)
