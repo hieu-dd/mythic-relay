@@ -22,6 +22,8 @@ jobs:
 
     env:
       PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+      GITHUB_PAT: ${{ secrets.CLAUDE_GH_PAT }}
+      GH_TOKEN: ${{ secrets.CLAUDE_GH_PAT }}
 
     steps:
       - name: Resolve PR metadata
@@ -51,12 +53,13 @@ jobs:
           repository: ${{ steps.pr.outputs.head_repo }}
           ref: ${{ steps.pr.outputs.head_ref }}
           fetch-depth: 0
+          token: ${{ env.GITHUB_PAT }}
 
       - name: Setup Claude Code with MiniMax
         uses: ./.github/actions/setup-claude-minimax
         with:
           minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
-          github_pat: ${{ secrets.GITHUB_TOKEN }}
+          github_pat: ${{ env.GITHUB_PAT }}
 
       - name: Resolve PR comments and patch with Claude
         run: |
