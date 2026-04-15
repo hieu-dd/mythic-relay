@@ -18,7 +18,8 @@ jobs:
       cancel-in-progress: true
 
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PAT: ${{ secrets.CLAUDE_GH_PAT != '' && secrets.CLAUDE_GH_PAT || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.CLAUDE_GH_PAT != '' && secrets.CLAUDE_GH_PAT || secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
