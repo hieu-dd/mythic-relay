@@ -1,0 +1,38 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  review-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Required if Claude needs to comment or edit the PR
+    
+    env:
+      # Use GITHUB_TOKEN for standard operations, or a PAT if you need to trigger other workflows
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history so Claude can see the diff properly
+
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ env.GITHUB_PAT }}
+
+      - name: Run Claude Review
+        run: |
+          claude -p "Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }} by skill review-code.
+          IMPORTANT:
+          - Post findings as INLINE review comments on the exact changed code lines in the PR diff (file + line), not as a normal PR conversation comment.
+          - Use GitHub MCP review-comment capability (pull request review comments).
+          - Only if a finding cannot be mapped to a specific diff line, put it in one short general PR comment." \
+            --dangerously-skip-permissions

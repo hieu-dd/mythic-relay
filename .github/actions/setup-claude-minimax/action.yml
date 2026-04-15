@@ -1,0 +1,53 @@
+name: Setup Claude Code with MiniMax
+description: Validate secrets, configure MiniMax env, install Claude Code, and add GitHub MCP.
+
+inputs:
+  minimax_api_key:
+    description: MiniMax API key
+    required: true
+  github_pat:
+    description: GitHub token or PAT for MCP auth
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Ensure MiniMax secret exists
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.minimax_api_key }}" ]; then
+          echo "::error::MINIMAX_API_KEY is missing. Check repository secrets."
+          exit 1
+        fi
+
+    - name: Configure Claude Code environment
+      shell: bash
+      run: |
+        {
+          echo "ANTHROPIC_BASE_URL=https://api.minimax.io/anthropic"
+          echo "ANTHROPIC_AUTH_TOKEN=${{ inputs.minimax_api_key }}"
+          echo "ANTHROPIC_MODEL=MiniMax-M2.7"
+          echo "ANTHROPIC_SMALL_FAST_MODEL=MiniMax-M2.7"
+          echo "ANTHROPIC_DEFAULT_SONNET_MODEL=MiniMax-M2.7"
+          echo "ANTHROPIC_DEFAULT_OPUS_MODEL=MiniMax-M2.7"
+          echo "ANTHROPIC_DEFAULT_HAIKU_MODEL=MiniMax-M2.7"
+          echo "API_TIMEOUT_MS=3000000"
+          echo "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1"
+        } >> "$GITHUB_ENV"
+
+    - name: Install Claude Code
+      shell: bash
+      run: |
+        curl -fsSL https://claude.ai/install.sh | bash
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Install GitHub MCP
+      shell: bash
+      run: |
+        claude mcp add-json github '{
+          "type": "http",
+          "url": "https://api.githubcopilot.com/mcp",
+          "headers": {
+            "Authorization": "Bearer ${{ inputs.github_pat }}"
+          }
+        }'

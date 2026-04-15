@@ -1,0 +1,39 @@
+name: Claude Issue Implement
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  implement-issue:
+    if: contains(github.event.issue.labels.*.name, 'AI')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    concurrency:
+      group: claude-issue-implement-${{ github.event.issue.number }}
+      cancel-in-progress: true
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ env.GITHUB_PAT }}
+
+      - name: Run Claude issue implement
+        run: |
+          claude -p "Implement issue #${{ github.event.issue.number }} in ${{ github.repository }}.
+          Requirements:
+          1) Understand the issue and implement the required code changes,
+          2) Run relevant checks/tests when possible,
+          3) Create a new branch, commit the changes with a clear message,
+          4) Open a draft pull request linked to this issue via GitHub MCP,
+          5) Comment on this issue with implementation summary, branch name, and draft PR link." \
+          --dangerously-skip-permissions

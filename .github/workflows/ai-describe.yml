@@ -1,0 +1,46 @@
+name: AI PR Describer
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  describe-pr:
+    # Only run if the comment is on a PR and starts with the specific command
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/ai describe-pr')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      issues: read
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate PR Metadata
+        id: claude_ai
+        run: |
+          # Use Claude to generate a JSON-formatted title and description
+          # We ask for a specific format so we can parse it easily
+          PROMPT="Analyze the changes of PR #${{ github.event.issue.number }} in ${{ github.repository }}. 
+          Respond ONLY with a JSON object containing two keys: 'title' and 'description'.
+          The 'title' should be a concise summary. 
+          The 'description' should be a bulleted list of changes and potential impacts.
+          Update the title and description via github mcp."
+
+          claude -p "$PROMPT" --dangerously-skip-permissions
+          
+          # Basic extraction logic (Assuming Claude returns the JSON block)
+          # Note: In production, you'd want a more robust way to strip non-JSON text

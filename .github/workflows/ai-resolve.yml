@@ -1,0 +1,54 @@
+name: AI Resolve and Patch PR
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  resolve-pr-comments:
+    if: >-
+      startsWith(github.event.comment.body, '/ai-resove') ||
+      startsWith(github.event.comment.body, '/ai-resolve')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    concurrency:
+      group: ai-resolve-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: true
+
+    env:
+      PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.pr.outputs.head_repo }}
+          ref: ${{ steps.pr.outputs.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Claude Code with MiniMax
+        uses: ./.github/actions/setup-claude-minimax
+        with:
+          minimax_api_key: ${{ secrets.MINIMAX_API_KEY }}
+          github_pat: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve PR comments and patch with Claude
+        run: |
+          claude -p "PR #${{ steps.pr.outputs.number }} in ${{ github.repository }} received an AI resolve command.
+          Work fully autonomously without further human intervention:
+          - Review all open review threads and PR comments.
+          - Decide which comments are valid/actionable.
+          - Implement code changes directly in the checked out PR branch when needed.
+          - Run relevant lint/tests for touched areas when feasible.
+          - Commit and push updates to the same PR branch.
+          - Resolve threads that are fully addressed.
+          - Reply on threads that should stay open with concise reasons.
+          - Post one final PR summary comment with actions taken, commits pushed, resolved/replied counts, and remaining items.
+          Use local git for code changes and GitHub MCP for PR/review-thread operations." \
+          --dangerously-skip-permissions

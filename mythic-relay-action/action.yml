@@ -1,0 +1,17 @@
+name: mythic-relay-action
+description: Python action for mythic-relay issue event handling
+author: mythic-relay
+
+outputs:
+  is_issue_opened:
+    description: Whether this event is an issue opened event
+  issue_number:
+    description: Issue number when available
+  issue_title:
+    description: Issue title when available
+  issue_body:
+    description: Issue body when available
+
+runs:
+  using: docker
+  image: Dockerfile
