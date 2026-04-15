@@ -34,5 +34,6 @@ jobs:
           IMPORTANT:
           - Post findings as INLINE review comments on the exact changed code lines in the PR diff (file + line), not as a normal PR conversation comment.
           - Use GitHub MCP review-comment capability (pull request review comments).
+          - If code is good and no changes are needed, post a single approving review comment.
           - Only if a finding cannot be mapped to a specific diff line, put it in one short general PR comment." \
             --dangerously-skip-permissions
