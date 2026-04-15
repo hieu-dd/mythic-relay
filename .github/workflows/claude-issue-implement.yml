@@ -36,7 +36,7 @@ jobs:
 
       - name: Run Claude issue implement
         run: |
-          claude -p "Implement issue #${{ github.event.issue.number }} in ${{ github.repository }}.
+          claude -p "Implement issue #${{ github.event.issue.number }} in ${{ github.repository }} via skill backlog-investigator.
           Requirements:
           1) Understand the issue and implement the required code changes,
           2) Run relevant checks/tests when possible,
