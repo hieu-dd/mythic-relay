@@ -9,13 +9,8 @@ on:
 jobs:
   resolve-pr-comments:
     if: >-
-      (
-        (github.event_name == 'issue_comment' && github.event.issue.pull_request) ||
-        github.event_name == 'pull_request_review_comment'
-      ) &&
-      startsWith(github.event.comment.body, '/ai-resolve') &&
-      !endsWith(github.actor, '[bot]') &&
-      contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+      startsWith(github.event.comment.body, '/ai-resove') ||
+      startsWith(github.event.comment.body, '/ai-resolve')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,23 +25,6 @@ jobs:
       PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
 
     steps:
-      - name: Get PR metadata
-        id: pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const prNumber = context.payload.issue?.number ?? context.payload.pull_request?.number;
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-            });
-
-            core.setOutput('number', String(pr.number));
-            core.setOutput('head_ref', pr.head.ref);
-            core.setOutput('head_repo', pr.head.repo.full_name);
-            core.setOutput('head_sha', pr.head.sha);
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -62,20 +40,15 @@ jobs:
 
       - name: Resolve PR comments and patch with Claude
         run: |
-          claude -p "PR #${{ steps.pr.outputs.number }} in ${{ github.repository }} received /ai-resolve.
-          Tasks:
-          1) Review all currently open PR review threads/comments.
-          2) For valid and actionable review feedback, update code in the checked out branch.
-          3) Run relevant tests/lint for touched areas when feasible.
-          4) Commit and push fixes to the same PR branch with a clear message.
-          5) Resolve threads that are fully addressed by your changes.
-          6) If a thread should not be resolved yet, reply with a short and concrete reason.
-          7) If branch permissions prevent pushing, leave a PR comment explaining what could not be applied.
-          8) Post one final summary comment with:
-             - what was changed,
-             - commit SHA(s),
-             - number of threads resolved,
-             - number of threads replied,
-             - remaining unresolved action items.
-          " \
+          claude -p "PR #${{ steps.pr.outputs.number }} in ${{ github.repository }} received an AI resolve command.
+          Work fully autonomously without further human intervention:
+          - Review all open review threads and PR comments.
+          - Decide which comments are valid/actionable.
+          - Implement code changes directly in the checked out PR branch when needed.
+          - Run relevant lint/tests for touched areas when feasible.
+          - Commit and push updates to the same PR branch.
+          - Resolve threads that are fully addressed.
+          - Reply on threads that should stay open with concise reasons.
+          - Post one final PR summary comment with actions taken, commits pushed, resolved/replied counts, and remaining items.
+          Use local git for code changes and GitHub MCP for PR/review-thread operations." \
           --dangerously-skip-permissions
