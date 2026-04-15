@@ -111,6 +111,8 @@ def build_prompt(
 
     prompt += """
 
+--- END ISSUE CONTENT ---
+
 Work autonomously to implement the requested changes:
 - Make necessary code changes
 - Run relevant lint/tests when feasible
@@ -264,9 +266,9 @@ def _main() -> None:
 
     if args.command == "parse-request":
         result = parse_request(args.request_text)
-        print(f"::set-output name=user_request::{result.user_request}")
-        print(f"::set-output name=model_override::{result.model_override or ''}")
-        print(f"::set-output name=max_turns_override::{result.max_turns_override or ''}")
+        print(f"user_request={result.user_request} >> $GITHUB_OUTPUT")
+        print(f"model_override={result.model_override or ''} >> $GITHUB_OUTPUT")
+        print(f"max_turns_override={result.max_turns_override or ''} >> $GITHUB_OUTPUT")
 
     elif args.command == "build-prompt":
         prompt = build_prompt(
@@ -276,7 +278,7 @@ def _main() -> None:
             issue_number=args.issue_number,
             repository=args.repository,
         )
-        print(f"::set-output name=prompt::{prompt}")
+        print(f"prompt={prompt} >> $GITHUB_OUTPUT")
 
     elif args.command == "run-agent":
         agent_result = run_agent(
@@ -287,6 +289,8 @@ def _main() -> None:
         )
         print(f"result={agent_result['result']} >> $GITHUB_OUTPUT")
         print(f"failure_reason={agent_result['failure_reason']} >> $GITHUB_OUTPUT")
+        if agent_result["result"] == "failure":
+            sys.exit(1)
 
     elif args.command == "finalize-success":
         finalize_success(pr_url=args.pr_url, summary=args.summary)
