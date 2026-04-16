@@ -112,7 +112,16 @@ class Issue:
         user = data.get("user")
         if not user or "login" not in user:
             raise GitHubAPIError(f"Invalid issue response: missing user.login in {data!r}")
-        for field in ("id", "number", "title", "body", "state", "html_url", "created_at", "updated_at"):
+        for field in (
+            "id",
+            "number",
+            "title",
+            "body",
+            "state",
+            "html_url",
+            "created_at",
+            "updated_at",
+        ):
             if field not in data:
                 raise GitHubAPIError(f"Invalid issue response: missing '{field}' in {data!r}")
         return cls(
@@ -139,6 +148,7 @@ class PullRequest:
     state: str
     html_url: str
     draft: bool
+    user: str
 
     @classmethod
     def from_response(cls, data: dict[str, Any]) -> PullRequest:
@@ -159,6 +169,7 @@ class PullRequest:
             state=data["state"],
             html_url=data["html_url"],
             draft=data["draft"],
+            user=user["login"],
         )
 
 

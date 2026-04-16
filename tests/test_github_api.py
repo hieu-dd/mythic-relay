@@ -368,10 +368,13 @@ class TestGitHubAPIRequest:
 
     def test_https_validation(self) -> None:
         """Test that non-HTTPS URLs raise GitHubAPIError."""
-        api = GitHubAPI("owner", "repo")
-        api._api_base = "http://api.github.com"
-        with pytest.raises(GitHubAPIError, match="HTTPS"):
-            api._request("GET", "/repos/owner/repo/issues/1")
+        import urllib.error
+
+        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("Rejected")):
+            api = GitHubAPI("owner", "repo")
+            api._api_base = "http://api.github.com"
+            with pytest.raises(GitHubAPIError, match="HTTPS"):
+                api._request("GET", "/repos/owner/repo/issues/1")
 
 
 class TestGitHubAPIAuth:

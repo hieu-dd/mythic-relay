@@ -1,6 +1,7 @@
 """GitHub API wrapper for comments, reactions, and PR operations."""
 
 from mythic_relay.github.api import (
+    DEFAULT_TIMEOUT,
     Comment,
     GitHubAPI,
     GitHubAPIError,
@@ -11,6 +12,7 @@ from mythic_relay.github.api import (
 )
 
 __all__ = [
+    "DEFAULT_TIMEOUT",
     "Comment",
     "GitHubAPI",
     "GitHubAPIError",
