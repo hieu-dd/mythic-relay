@@ -12,6 +12,7 @@ from mythic_relay.github.api import (
     Comment,
     GitHubAPI,
     GitHubAPIError,
+    Issue,
     PullRequest,
     Reaction,
     ReactionType,
@@ -189,6 +190,80 @@ class TestPullRequestFromResponse:
         }
         with pytest.raises(GitHubAPIError, match="missing 'number'"):
             PullRequest.from_response(data)
+
+
+class TestIssueFromResponse:
+    """Tests for Issue.from_response factory."""
+
+    def test_valid_response(self) -> None:
+        """Test parsing a valid GitHub issue response."""
+        data = {
+            "id": 1,
+            "number": 42,
+            "title": "Bug report",
+            "body": "Description",
+            "state": "open",
+            "html_url": "https://github.com/owner/repo/issues/42",
+            "user": {"login": "octocat"},
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+        }
+        issue = Issue.from_response(data)
+        assert issue.id == 1
+        assert issue.number == 42
+        assert issue.title == "Bug report"
+        assert issue.body == "Description"
+        assert issue.state == "open"
+        assert issue.html_url == "https://github.com/owner/repo/issues/42"
+        assert issue.user == "octocat"
+        assert issue.created_at == "2024-01-01T00:00:00Z"
+        assert issue.updated_at == "2024-01-02T00:00:00Z"
+
+    def test_closed_issue(self) -> None:
+        """Test parsing a closed issue response."""
+        data = {
+            "id": 2,
+            "number": 43,
+            "title": "Fixed bug",
+            "body": "Fixed",
+            "state": "closed",
+            "html_url": "https://github.com/owner/repo/issues/43",
+            "user": {"login": "octocat"},
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-03T00:00:00Z",
+        }
+        issue = Issue.from_response(data)
+        assert issue.state == "closed"
+
+    def test_missing_user_login(self) -> None:
+        """Test that missing user.login raises GitHubAPIError."""
+        data = {
+            "id": 1,
+            "number": 42,
+            "title": "Bug",
+            "body": "",
+            "state": "open",
+            "html_url": "https://x.com",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+        }
+        with pytest.raises(GitHubAPIError, match="missing user.login"):
+            Issue.from_response(data)
+
+    def test_missing_title_field(self) -> None:
+        """Test that missing title field raises GitHubAPIError."""
+        data = {
+            "id": 1,
+            "number": 42,
+            "body": "Bug",
+            "state": "open",
+            "html_url": "https://x.com",
+            "user": {"login": "octocat"},
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-01T00:00:00Z",
+        }
+        with pytest.raises(GitHubAPIError, match="missing 'title'"):
+            Issue.from_response(data)
 
 
 class TestGitHubAPIRequest:
@@ -441,3 +516,30 @@ class TestGitHubAPIIntegration:
             pr = api.get_pull_request(42)
             assert isinstance(pr, PullRequest)
             assert pr.state == "closed"
+
+    def test_get_issue(self) -> None:
+        """Test getting an issue returns Issue dataclass."""
+        mock_response = MagicMock()
+        mock_response.read.return_value = json.dumps(
+            {
+                "id": 1,
+                "number": 42,
+                "title": "Bug report",
+                "body": "Issue description",
+                "state": "open",
+                "html_url": "https://github.com/owner/repo/issues/42",
+                "user": {"login": "reporter"},
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-02T00:00:00Z",
+            }
+        ).encode()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_response):
+            api = GitHubAPI("owner", "repo", token="tok")
+            issue = api.get_issue(42)
+            assert isinstance(issue, Issue)
+            assert issue.number == 42
+            assert issue.title == "Bug report"
+            assert issue.user == "reporter"

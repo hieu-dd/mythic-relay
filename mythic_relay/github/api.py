@@ -93,6 +93,42 @@ class Reaction:
 
 
 @dataclass
+class Issue:
+    """Represents a GitHub issue (or PR when accessed via issues endpoint)."""
+
+    id: int
+    number: int
+    title: str
+    body: str
+    state: str
+    html_url: str
+    user: str
+    created_at: str
+    updated_at: str
+
+    @classmethod
+    def from_response(cls, data: dict[str, Any]) -> Issue:
+        """Create an Issue from a GitHub API response dict."""
+        user = data.get("user")
+        if not user or "login" not in user:
+            raise GitHubAPIError(f"Invalid issue response: missing user.login in {data!r}")
+        for field in ("id", "number", "title", "body", "state", "html_url", "created_at", "updated_at"):
+            if field not in data:
+                raise GitHubAPIError(f"Invalid issue response: missing '{field}' in {data!r}")
+        return cls(
+            id=data["id"],
+            number=data["number"],
+            title=data["title"],
+            body=data["body"],
+            state=data["state"],
+            html_url=data["html_url"],
+            user=user["login"],
+            created_at=data["created_at"],
+            updated_at=data["updated_at"],
+        )
+
+
+@dataclass
 class PullRequest:
     """Represents a GitHub pull request."""
 
@@ -309,20 +345,20 @@ class GitHubAPI:
         if response:
             raise GitHubAPIError(f"Unexpected response on delete: {response}")
 
-    def get_issue(self, issue_number: int) -> dict[str, Any]:
+    def get_issue(self, issue_number: int) -> Issue:
         """Get an issue or pull request details.
 
         Args:
             issue_number: The issue or PR number.
 
         Returns:
-            Issue/PR data dict from GitHub API.
+            Issue object representing the issue or PR.
 
         Raises:
             GitHubAPIError: If the API call fails.
         """
         path = f"/repos/{self.owner}/{self.repo}/issues/{issue_number}"
-        return self._request("GET", path)
+        return Issue.from_response(self._request("GET", path))
 
     def create_pull_request(
         self,
