@@ -45,6 +45,9 @@ description: |
 7. **Resolve addressed threads** via GitHub MCP (batch where possible)
 8. **Reply on remaining threads** — concise explanations, professional tone
 9. **Post PR summary comment** — counts + status (see `autonomous-checklist.md` template)
+10. **Submit GitHub review** — based on remaining open threads:
+    - No unresolved actionable threads → Submit `APPROVE` review
+    - Unresolved actionable threads remain → Submit `REQUEST_CHANGES` review
 
 ### Phase 4: Handle Errors
 

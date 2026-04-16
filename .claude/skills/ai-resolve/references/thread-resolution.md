@@ -82,6 +82,19 @@ Args: owner, repo, pull_number, body, event (COMMENT/APPROVE/REQUEST_CHANGES)
 - On 403: fail fast — insufficient permissions
 - Log all API calls with redacted bodies
 
+## Submit GitHub Review
+
+Use `github_create_pull_request_review` to submit a review:
+
+```
+Tool: github_create_pull_request_review
+Args: owner, repo, pull_number, body, event (APPROVE/REQUEST_CHANGES/COMMENT)
+```
+
+- **APPROVE** — when all actionable threads are resolved or replied
+- **REQUEST_CHANGES** — when unresolved actionable threads remain
+- **COMMENT** — for informational-only reviews (no action on PR state)
+
 ## MCP Fallback
 
 If GitHub MCP is unavailable or all retries fail:

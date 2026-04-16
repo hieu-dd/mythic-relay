@@ -69,10 +69,8 @@ For each open review thread:
 ```markdown
 ## AI Resolve Summary
 
-**Commits pushed:** N
-**Threads resolved:** N
-**Threads replied:** N
-**Remaining open:** N
+**Commits pushed:** N | **Threads resolved:** N | **Threads replied:** N | **Remaining open:** N
+**Review submitted:** APPROVE / REQUEST_CHANGES
 
 ### Resolved
 - [thread] <brief description of what was fixed>
@@ -93,6 +91,7 @@ For each open review thread:
 | Test/lint fails | Log but continue — do not block on pre-existing test failures |
 | No actionable threads found | Post "No actionable review threads found. PR looks good." — do not leave silent |
 | Git merge conflict on push | Post summary noting conflict needs manual resolution, list uncommitted changes |
+| Review submit fails | Retry once; if still fails, note in summary and continue |
 
 ## No-Op Guard
 
