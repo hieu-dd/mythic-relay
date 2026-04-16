@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 DEFAULT_TIMEOUT = 30
 
@@ -253,7 +253,7 @@ class GitHubAPI:
                 content = response.read()
                 if not content:
                     return {}
-                return json.loads(content.decode("utf-8"))
+                return cast(dict[str, Any], json.loads(content.decode("utf-8")))
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
             if e.code == 429:

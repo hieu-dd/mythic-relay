@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from email.message import Message
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -266,6 +267,14 @@ class TestIssueFromResponse:
             Issue.from_response(data)
 
 
+def _make_message(headers: dict[str, str]) -> Message:
+    """Build an email Message from a dict of headers."""
+    msg = Message()
+    for k, v in headers.items():
+        msg[k] = v
+    return msg
+
+
 class TestGitHubAPIRequest:
     """Tests for GitHubAPI._request method."""
 
@@ -305,7 +314,7 @@ class TestGitHubAPIRequest:
             url="https://api.github.com/repos/owner/repo/issues/1",
             code=401,
             msg="Unauthorized",
-            hdrs={},
+            hdrs=Message(),
             fp=io.BytesIO(b'{"message": "Bad credentials"}'),
         )
 
@@ -325,7 +334,7 @@ class TestGitHubAPIRequest:
             url="https://api.github.com/repos/owner/repo/issues/999",
             code=404,
             msg="Not Found",
-            hdrs={},
+            hdrs=Message(),
             fp=io.BytesIO(b'{"message": "Not Found"}'),
         )
 
@@ -344,7 +353,7 @@ class TestGitHubAPIRequest:
             url="https://api.github.com/repos/owner/repo/issues/1",
             code=429,
             msg="Rate Limit Exceeded",
-            hdrs={"Retry-After": "30"},
+            hdrs=_make_message({"Retry-After": "30"}),
             fp=io.BytesIO(b'{"message": "Rate limit exceeded"}'),
         )
 
@@ -367,14 +376,15 @@ class TestGitHubAPIRequest:
                 api._request("GET", "/repos/owner/repo/issues/1")
 
     def test_https_validation(self) -> None:
-        """Test that non-HTTPS URLs raise GitHubAPIError."""
-        import urllib.error
+        """Test that non-HTTPS URLs raise GitHubAPIError before any network call.
 
-        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("Rejected")):
-            api = GitHubAPI("owner", "repo")
-            api._api_base = "http://api.github.com"
-            with pytest.raises(GitHubAPIError, match="HTTPS"):
-                api._request("GET", "/repos/owner/repo/issues/1")
+        The HTTPS check happens at the top of _request before urlopen is called,
+        so no mock is needed for this test.
+        """
+        api = GitHubAPI("owner", "repo")
+        api._api_base = "http://api.github.com"
+        with pytest.raises(GitHubAPIError, match="HTTPS"):
+            api._request("GET", "/repos/owner/repo/issues/1")
 
 
 class TestGitHubAPIAuth:
