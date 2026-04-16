@@ -70,7 +70,7 @@ For each open review thread:
 ## AI Resolve Summary
 
 **Commits pushed:** N | **Threads resolved:** N | **Threads replied:** N | **Remaining open:** N
-**Review submitted:** APPROVE / REQUEST_CHANGES
+**Review submitted:** APPROVE / COMMENT / REQUEST_CHANGES
 
 ### Resolved
 - [thread] <brief description of what was fixed>

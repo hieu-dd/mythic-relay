@@ -47,6 +47,7 @@ description: |
 9. **Post PR summary comment** — counts + status (see `autonomous-checklist.md` template)
 10. **Submit GitHub review** — based on remaining open threads:
     - No unresolved actionable threads → Submit `APPROVE` review
+    - Only informational/outdated threads remain → Submit `COMMENT` review (acknowledge without approval)
     - Unresolved actionable threads remain → Submit `REQUEST_CHANGES` review
 
 ### Phase 4: Handle Errors

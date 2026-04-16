@@ -92,8 +92,8 @@ Args: owner, repo, pull_number, body, event (APPROVE/REQUEST_CHANGES/COMMENT)
 ```
 
 - **APPROVE** — when all actionable threads are resolved or replied
+- **COMMENT** — when only informational/outdated threads remain and no approval is given
 - **REQUEST_CHANGES** — when unresolved actionable threads remain
-- **COMMENT** — for informational-only reviews (no action on PR state)
 
 ## MCP Fallback
 
