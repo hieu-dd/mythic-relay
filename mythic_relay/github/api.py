@@ -1,14 +1,14 @@
 """GitHub API wrapper for comments, reactions, and PR operations."""
 
+from __future__ import annotations
+
 import json
 import os
 import urllib.error
 import urllib.request
-from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
-
 
 DEFAULT_TIMEOUT = 30
 
@@ -66,11 +66,22 @@ class GitHubAPI:
             owner: Repository owner (user or org).
             repo: Repository name.
             token: GitHub personal access token. Defaults to GITHUB_TOKEN env var.
+
+        Note:
+            The token is stored for API authentication and is redacted in __repr__.
+            Do not log GitHubAPI instances directly.
         """
         self.owner = owner
         self.repo = repo
         self._token = token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT")
         self._api_base = "https://api.github.com"
+
+    def __repr__(self) -> str:
+        """Return a redacted representation of the GitHubAPI instance."""
+        return (
+            f"GitHubAPI(owner={self.owner!r}, repo={self.repo!r}, "
+            f"token={'***' if self._token else None!r})"
+        )
 
     def _headers(self) -> dict[str, str]:
         """Return headers for GitHub API requests."""
@@ -102,6 +113,8 @@ class GitHubAPI:
             GitHubAPIError: If the request fails.
         """
         url = f"{self._api_base}{path}"
+        if not url.startswith("https://"):
+            raise GitHubAPIError("GitHub API only supports HTTPS.")
         headers = self._headers()
 
         body: bytes | None = None
@@ -122,8 +135,9 @@ class GitHubAPI:
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
             if e.code == 429:
+                retry_after = e.headers.get("Retry-After", "unknown")
                 raise GitHubAPIError(
-                    "GitHub API rate limit exceeded. Retry after the Retry-After header value.",
+                    f"GitHub API rate limit exceeded. Retry after {retry_after} seconds.",
                     status_code=429,
                 ) from e
             try:
@@ -210,12 +224,14 @@ class GitHubAPI:
             reaction_id: The reaction ID to delete.
 
         Raises:
-            GitHubAPIError: If the API call fails.
+            GitHubAPIError: If the API call fails or returns an unexpected response.
         """
         path = (
             f"/repos/{self.owner}/{self.repo}/issues/comments/{comment_id}/reactions/{reaction_id}"
         )
-        self._request("DELETE", path)
+        response = self._request("DELETE", path)
+        if response:
+            raise GitHubAPIError(f"Unexpected response on delete: {response}")
 
     def get_issue(self, issue_number: int) -> dict[str, Any]:
         """Get an issue or pull request details.
