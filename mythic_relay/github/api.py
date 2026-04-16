@@ -1,14 +1,16 @@
 """GitHub API wrapper for comments, reactions, and PR operations."""
 
-from __future__ import annotations
-
 import json
 import os
 import urllib.error
 import urllib.request
+from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, cast
+from typing import Any
+
+
+DEFAULT_TIMEOUT = 30
 
 
 class ReactionType(str, Enum):
@@ -115,14 +117,19 @@ class GitHubAPI:
         )
 
         try:
-            with urllib.request.urlopen(request) as response:
-                return cast(dict[str, Any], json.loads(response.read().decode("utf-8")))
+            with urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT) as response:
+                return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
+            if e.code == 429:
+                raise GitHubAPIError(
+                    "GitHub API rate limit exceeded. Retry after the Retry-After header value.",
+                    status_code=429,
+                ) from e
             try:
                 error_json = json.loads(error_body)
                 message = error_json.get("message", str(e))
-            except Exception:
+            except json.JSONDecodeError:
                 message = f"HTTP {e.code}: {error_body or str(e)}"
             raise GitHubAPIError(message, status_code=e.code) from e
         except urllib.error.URLError as e:
