@@ -47,12 +47,36 @@ class Comment:
     @classmethod
     def from_response(cls, data: dict[str, Any]) -> Comment:
         """Create a Comment from a GitHub API response dict."""
+        user = data.get("user")
+        if not user or "login" not in user:
+            raise GitHubAPIError(f"Invalid comment response: missing user.login in {data!r}")
         return cls(
             id=data["id"],
             body=data["body"],
-            user=data["user"]["login"],
+            user=user["login"],
             created_at=data["created_at"],
             updated_at=data["updated_at"],
+        )
+
+
+@dataclass
+class Reaction:
+    """Represents a GitHub reaction to a comment."""
+
+    id: int
+    user: str
+    content: str
+
+    @classmethod
+    def from_response(cls, data: dict[str, Any]) -> Reaction:
+        """Create a Reaction from a GitHub API response dict."""
+        user = data.get("user")
+        if not user or "login" not in user:
+            raise GitHubAPIError(f"Invalid reaction response: missing user.login in {data!r}")
+        return cls(
+            id=data["id"],
+            user=user["login"],
+            content=data["content"],
         )
 
 
@@ -73,7 +97,9 @@ class GitHubAPI:
         """
         self.owner = owner
         self.repo = repo
-        self._token = token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT")
+        self._token = (
+            token or os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PAT") or None
+        )
         self._api_base = "https://api.github.com"
 
     def __repr__(self) -> str:
@@ -131,7 +157,10 @@ class GitHubAPI:
 
         try:
             with urllib.request.urlopen(request, timeout=DEFAULT_TIMEOUT) as response:
-                return json.loads(response.read().decode("utf-8"))
+                content = response.read()
+                if not content:
+                    return {}
+                return json.loads(content.decode("utf-8"))
         except urllib.error.HTTPError as e:
             error_body = e.read().decode("utf-8") if e.fp else ""
             if e.code == 429:
@@ -199,7 +228,7 @@ class GitHubAPI:
         response = self._request("GET", path)
         return Comment.from_response(response)
 
-    def add_reaction(self, comment_id: int, reaction: ReactionType) -> dict[str, Any]:
+    def add_reaction(self, comment_id: int, reaction: ReactionType) -> Reaction:
         """Add a reaction to a comment.
 
         Args:
@@ -207,14 +236,14 @@ class GitHubAPI:
             reaction: The reaction type to add.
 
         Returns:
-            The reaction response from GitHub API.
+            Reaction object representing the added reaction.
 
         Raises:
             GitHubAPIError: If the API call fails.
         """
         path = f"/repos/{self.owner}/{self.repo}/issues/comments/{comment_id}/reactions"
-        response = self._request("POST", path, {"content": reaction.value})
-        return response
+        reaction_data = self._request("POST", path, {"content": reaction.value})
+        return Reaction.from_response(reaction_data)
 
     def delete_reaction(self, comment_id: int, reaction_id: int) -> None:
         """Delete a reaction from a comment.

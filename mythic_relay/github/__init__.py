@@ -4,6 +4,7 @@ from mythic_relay.github.api import (
     Comment,
     GitHubAPI,
     GitHubAPIError,
+    Reaction,
     ReactionType,
 )
 
@@ -11,5 +12,6 @@ __all__ = [
     "Comment",
     "GitHubAPI",
     "GitHubAPIError",
+    "Reaction",
     "ReactionType",
 ]
