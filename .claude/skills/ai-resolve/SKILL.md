@@ -18,11 +18,14 @@ description: |
 1. **Gather PR context** via GitHub MCP:
    - Fetch PR details (title, body, changed files, review state)
    - Fetch all open review threads and PR comments
-2. **Categorize threads** per `.claude/skills/ai-resolve/references/autonomous-checklist.md`:
+2. **Author reply pre-check**: For each open thread, check whether the PR author
+   has replied to it. Skip threads with no author reply — they haven't been
+   addressed yet. Track which threads are skipped for the summary.
+3. **Categorize threads** (only those with author replies) per `.claude/skills/ai-resolve/references/autonomous-checklist.md`:
    - `actionable` — valid concern requiring code change or explanation
    - `informational` — nitpick, praise, or question with obvious answer
    - `outdated` — on code that was subsequently changed
-3. **No-op guard**: If zero actionable threads → post "No actionable review threads found." comment and exit
+4. **No-op guard**: If zero threads with author replies exist → post "No threads have author replies yet. Awaiting author response." comment and exit
 
 ### Phase 2: Plan (Internal)
 
@@ -42,6 +45,10 @@ description: |
 7. **Resolve addressed threads** via GitHub MCP (batch where possible)
 8. **Reply on remaining threads** — concise explanations, professional tone
 9. **Post PR summary comment** — counts + status (see `autonomous-checklist.md` template)
+10. **Submit GitHub review** — based on remaining open threads:
+    - No unresolved actionable threads → Submit `APPROVE` review
+    - Only informational/outdated threads remain → Submit `COMMENT` review (acknowledge without approval)
+    - Unresolved actionable threads remain → Submit `REQUEST_CHANGES` review
 
 ### Phase 4: Handle Errors
 
