@@ -50,6 +50,9 @@ class Comment:
         user = data.get("user")
         if not user or "login" not in user:
             raise GitHubAPIError(f"Invalid comment response: missing user.login in {data!r}")
+        for field in ("id", "body", "created_at", "updated_at"):
+            if field not in data:
+                raise GitHubAPIError(f"Invalid comment response: missing '{field}' in {data!r}")
         return cls(
             id=data["id"],
             body=data["body"],
@@ -65,7 +68,7 @@ class Reaction:
 
     id: int
     user: str
-    content: str
+    content: ReactionType
 
     @classmethod
     def from_response(cls, data: dict[str, Any]) -> Reaction:
@@ -73,10 +76,53 @@ class Reaction:
         user = data.get("user")
         if not user or "login" not in user:
             raise GitHubAPIError(f"Invalid reaction response: missing user.login in {data!r}")
+        for field in ("id", "content"):
+            if field not in data:
+                raise GitHubAPIError(f"Invalid reaction response: missing '{field}' in {data!r}")
+        try:
+            content = ReactionType(data["content"])
+        except ValueError:
+            raise GitHubAPIError(
+                f"Invalid reaction response: unknown content {data['content']!r} in {data!r}"
+            )
         return cls(
             id=data["id"],
             user=user["login"],
-            content=data["content"],
+            content=content,
+        )
+
+
+@dataclass
+class PullRequest:
+    """Represents a GitHub pull request."""
+
+    id: int
+    number: int
+    title: str
+    body: str
+    state: str
+    html_url: str
+    draft: bool
+
+    @classmethod
+    def from_response(cls, data: dict[str, Any]) -> PullRequest:
+        """Create a PullRequest from a GitHub API response dict."""
+        user = data.get("user")
+        if not user or "login" not in user:
+            raise GitHubAPIError(f"Invalid pull request response: missing user.login in {data!r}")
+        for field in ("id", "number", "title", "body", "state", "html_url", "draft"):
+            if field not in data:
+                raise GitHubAPIError(
+                    f"Invalid pull request response: missing '{field}' in {data!r}"
+                )
+        return cls(
+            id=data["id"],
+            number=data["number"],
+            title=data["title"],
+            body=data["body"],
+            state=data["state"],
+            html_url=data["html_url"],
+            draft=data["draft"],
         )
 
 
@@ -258,6 +304,7 @@ class GitHubAPI:
         path = (
             f"/repos/{self.owner}/{self.repo}/issues/comments/{comment_id}/reactions/{reaction_id}"
         )
+        # DELETE returns 204 No Content with empty body; any non-empty body is unexpected.
         response = self._request("DELETE", path)
         if response:
             raise GitHubAPIError(f"Unexpected response on delete: {response}")
@@ -284,7 +331,7 @@ class GitHubAPI:
         head: str,
         base: str = "main",
         draft: bool = True,
-    ) -> dict[str, Any]:
+    ) -> PullRequest:
         """Create a pull request.
 
         Args:
@@ -295,35 +342,37 @@ class GitHubAPI:
             draft: Whether to create as draft PR. Defaults to True.
 
         Returns:
-            PR data dict from GitHub API.
+            PullRequest object representing the created PR.
 
         Raises:
             GitHubAPIError: If the API call fails.
         """
         path = f"/repos/{self.owner}/{self.repo}/pulls"
-        return self._request(
-            "POST",
-            path,
-            {
-                "title": title,
-                "body": body,
-                "head": head,
-                "base": base,
-                "draft": draft,
-            },
+        return PullRequest.from_response(
+            self._request(
+                "POST",
+                path,
+                {
+                    "title": title,
+                    "body": body,
+                    "head": head,
+                    "base": base,
+                    "draft": draft,
+                },
+            )
         )
 
-    def get_pull_request(self, pr_number: int) -> dict[str, Any]:
+    def get_pull_request(self, pr_number: int) -> PullRequest:
         """Get a pull request details.
 
         Args:
             pr_number: The PR number.
 
         Returns:
-            PR data dict from GitHub API.
+            PullRequest object representing the PR.
 
         Raises:
             GitHubAPIError: If the API call fails.
         """
         path = f"/repos/{self.owner}/{self.repo}/pulls/{pr_number}"
-        return self._request("GET", path)
+        return PullRequest.from_response(self._request("GET", path))
