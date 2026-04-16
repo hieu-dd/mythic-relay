@@ -1,9 +1,9 @@
 ---
 name: backlog-investigator
 description: |
-  Investigates a backlog task from docs/backlog.md, researches the codebase, and produces a detailed implementation plan.
+  Investigates a backlog task from docs/backlog.md, researches the codebase, and automatically implements the task and creates a PR.
   Use when asked to work on a specific MR-### task from the backlog.
-  The agent: (1) reads the backlog task, (2) explores relevant existing code, (3) designs the implementation approach, (4) presents a plan for user approval before any code is written.
+  The agent: (1) reads the backlog task, (2) explores relevant existing code, (3) designs the implementation approach, (4) auto-implements, (5) creates PR targeting main.
 ---
 
 # Backlog Investigator
@@ -38,49 +38,62 @@ Based on exploration results, design the implementation approach:
 - Note dependencies on earlier MR tasks
 - Flag any architectural decisions or assumptions
 
-### Step 4 — Present Plan for Approval
+### Step 4 — Auto-Implement
 
-Present a clear implementation plan that includes:
-1. **What** — the specific code changes (new files, modified files)
-2. **How** — the approach/methodology for each change
-3. **Order** — dependency order if multiple steps are needed
-4. **Verification** — how to test the changes (run tests, run CLI commands, trigger workflows)
-
-Use AskUserQuestion only to clarify ambiguous requirements or to confirm approach choices.
-When the plan is clear and aligned with user intent, use ExitPlanMode to request approval.
-
-### Step 5 — Execute After Approval
-
-Only after the user approves the plan:
-1. Update the task list with TaskCreate/TaskUpdate
+Immediately after designing, begin implementation without any approval gate:
+1. Use TaskCreate to track progress
 2. Implement changes step by step
 3. Verify as you go
-4. Update task status when complete
+
+### Step 5 — Auto-Create PR
+
+After successful implementation:
+1. Run verification: `ruff check . && ruff format . && mypy mythic_relay tests && pytest`
+2. Create branch: `relay/MR-<num>-wip`
+3. Commit all changes
+4. Push branch
+5. Create PR targeting `main` with standardized title/description
+6. Output PR URL for CI consumption
+
+### PR Title Format
+`feat: MR-### — <task name from backlog>`
+
+### PR Description Format
+```markdown
+## Summary
+- <brief description>
+
+## Implementation
+- <key changes made>
+
+## Verification
+- <how to test>
+
+🤖 Generated with [Claude Code](https://claude.ai/claude-code)
+```
 
 ## Important Constraints
 
 - Always read `docs/architecture.md` and `docs/workflow.md` for context — they define the component contracts and pipeline stages
 - Follow the architectural patterns already established (layer structure, CLI command patterns, RunRequest/RunContext/RunResult contracts)
-- Do not begin implementation until the user explicitly approves the plan
 - If the task has dependencies that aren't yet implemented, flag this — don't proceed with incomplete foundations
-- Keep plans concise but detailed enough to execute without requiring additional research
+- Always create PR after successful implementation
+- Keep implementation concise but complete enough to execute without requiring additional research
 
-## Output Format for Plans
+## Output Format for Implementation Results
 
 ```
-## Implementation Plan: [MR-###] — [Task Name]
+## Implementation Complete: [MR-###] — [Task Name]
 
-### Context
-Why this task exists, what problem it solves, what triggered the need.
+### Summary
+<brief description of what was implemented>
 
-### Changes
-- **New files:** list new files with one-line purpose
-- **Modified files:** list existing files that change and one-line summary of change
-- **Approach:** key implementation decisions, why this approach was chosen
+### Changes Made
+- <list of files changed and what was done>
 
-### Dependencies
-Which MR tasks must be complete before this one (from backlog.md)
+### PR
+<PR URL>
 
 ### Verification
-How to verify the implementation works — specific commands, test runs, or workflow triggers.
+<Ran commands and results>
 ```
